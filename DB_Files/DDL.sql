@@ -29,8 +29,8 @@ profession varchar(256),
 primary key (profession_ID, profession) 
 );
 
-DROP TABLE IF EXISTS PRIMARYprofession CASCADE;
-CREATE TABLE PRIMARYprofession
+DROP TABLE IF EXISTS primary_profession CASCADE;
+CREATE TABLE primary_profession 
 (
 profession_ID int4, -- Change after non-atomized column primaryProfession has been corrected
 person_ID varchar(10),
@@ -39,8 +39,8 @@ foreign key(profession_ID) references profession (profession_ID),
 foreign key(person_ID) references person (person_ID)
 );
 
-DROP TABLE IF EXISTS MostRelevant CASCADE;
-CREATE TABLE MostRelevant
+DROP TABLE IF EXISTS most_relevant CASCADE;
+CREATE TABLE most_relevant
 (
 person_ID varchar(10),
 title_ID varchar(10),
@@ -108,8 +108,8 @@ foreign key (title_ID) references title (title_ID)
 
 );
 
-DROP TABLE IF EXISTS LocalizedDetail CASCADE;
-CREATE TABLE LocalizedDetail
+DROP TABLE IF EXISTS localized_detail CASCADE;
+CREATE TABLE localized_detail
 (
 localized_ID INT4 primary key,
 localized_title text,
