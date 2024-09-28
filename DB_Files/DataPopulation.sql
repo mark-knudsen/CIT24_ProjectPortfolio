@@ -42,27 +42,22 @@ primary key (profession_ID, profession)
 
 
 /*Trimming name_basics.primaryprofession into atomic and seperated values*/
+
 CREATE OR REPLACE FUNCTION profession_trim()
   RETURNS setof TEXT as  $BODY$
   declare longprofstring text;
   rec record;
-  profession_array text[];
+
 begin
- 
 for rec in SELECT distinct primaryprofession from name_basics
 LOOP
-	longprofstring = concat(longprofstring, rec.primaryprofession, ', '); 
-  --longprofstring
-END LOOP;
- 
-profession_array = regexp_split_to_array(longprofstring, '^(.*?(\bpass\b)[^$]*)$');
-raise notice '%', profession_array;
---return regexp_split_to_array((SELECT primaryprofession from name_basics WHERE nconst='nm0000001'), '^(.*?(\bpass\b)[^$]*)$');
-
+	longprofstring = concat(longprofstring, rec.primaryprofession, ', ');
+END LOOP; 
 return query select * from string_to_table(longprofstring, ',');
 end;
 $BODY$
   LANGUAGE plpgsql VOLATILE
+
 
 SELECT distinct * from profession_trim();
 
