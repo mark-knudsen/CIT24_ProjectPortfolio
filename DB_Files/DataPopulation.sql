@@ -88,8 +88,7 @@ CREATE OR REPLACE FUNCTION atomize_and_populate_primary_profession()
   RETURNS Table( id varchar, prof text)
 	LANGUAGE plpgsql 
 	as  $$
-  declare longprofstring text;
-  rec record;
+	declare rec record;
 begin
 drop table tempPrimProf; --if previous temptable exist, drop it 
 Create temp table tempPrimProf(pid varchar, primprof text); -- create new temptable
@@ -99,5 +98,42 @@ insert into tempPrimProf(pid, primprof) values (rec.nconst, unnest(string_to_arr
 END LOOP; 
 insert into primary_profession(profession_id, person_id) select profession_id, pid from tempPrimProf tpp, profession p where p.profession = primprof; -- populate from temp table to profession
 return query select * from tempPrimProf; -- for debugging purposes, can be removed as long as return type is changed too
+end;
+$$
+
+/*Creating most_relevant table*/
+
+
+DROP TABLE IF EXISTS most_relevant CASCADE;
+CREATE TABLE most_relevant
+(
+person_ID varchar(10),
+title_ID varchar(10),
+primary key (person_ID, title_ID),
+foreign key (person_ID) references person (person_ID),
+foreign key(title_ID) references title (title_ID) 
+);
+
+/*atomziation of data and subsequent population of table most_relevant*/
+create or replace function atomized_clean_mostknowfor()
+RETURNS table(personid varchar, titleid varchar)
+	LANGUAGE plpgsql 
+	as  $$
+	declare rec record;
+	declare temp_kft VARCHAR;
+	declare temp_kft1 VARCHAR;
+	declare temp_kft2 VARCHAR;
+begin 
+drop table outputTable2xx; --this line has to be commented out before start, did not spend time figuring out a better way
+create temp table outputTable2xx(per_id varchar, tit_id varchar); -- create temp table
+for rec in select nconst, knownfortitles from name_basics -- for each row returned from the select statement
+LOOP	
+	temp_kft = split_part(rec.knownfortitles, ',', 1); -- inserting knownfortitles first commaseperated value in to the temp_kft, since there is a max of 3 knownfortitles there are three variables
+	temp_kft1 = split_part(rec.knownfortitles, ',', 2);
+	temp_kft2 = split_part(rec.knownfortitles, ',', 3);
+insert into outputTable2xx(per_id, tit_id) values (rec.nconst, unnest(string_to_array(rec.knownfortitles, ','))); --heres where the insert into temp table happens
+END LOOP;
+insert into most_relevant(person_id, title_id) select per_id, tit_id from outputTable2xx where EXISTS(select tconst from title_basics where tconst = tit_id); -- and finally insert into the actual most_relevant table
+return query select * from most_relevant; 
 end;
 $$
