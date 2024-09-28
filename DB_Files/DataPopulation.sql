@@ -69,3 +69,35 @@ ALTER SEQUENCE test_seq RESTART WITH 0;
 insert into profession(profession) 
 SELECT distinct * from profession_trim();
 
+
+
+/*creates primary_profession*/
+DROP TABLE IF EXISTS primary_profession CASCADE;
+CREATE TABLE primary_profession 
+(
+profession_ID int4, -- Change after non-atomized column primaryProfession has been corrected
+person_ID varchar(10),
+primary key (profession_ID, person_ID), 
+foreign key(profession_ID) references profession (profession_ID),
+foreign key(person_ID) references person (person_ID)
+);
+
+
+/*atomize and populate primary_profession*/
+CREATE OR REPLACE FUNCTION atomize_and_populate_primary_profession()
+  RETURNS Table( id varchar, prof text)
+	LANGUAGE plpgsql 
+	as  $$
+  declare longprofstring text;
+  rec record;
+begin
+drop table tempPrimProf; --if previous temptable exist, drop it 
+Create temp table tempPrimProf(pid varchar, primprof text); -- create new temptable
+for rec in SELECT nconst, primaryprofession from name_basics -- for loop with select statement
+LOOP
+insert into tempPrimProf(pid, primprof) values (rec.nconst, unnest(string_to_array(rec.primaryprofession, ',')));  --populat temp table (an intermidiary step for debugging purposes, should be replaced with population below)
+END LOOP; 
+insert into primary_profession(profession_id, person_id) select profession_id, pid from tempPrimProf tpp, profession p where p.profession = primprof; -- populate from temp table to profession
+return query select * from tempPrimProf; -- for debugging purposes, can be removed as long as return type is changed too
+end;
+$$
