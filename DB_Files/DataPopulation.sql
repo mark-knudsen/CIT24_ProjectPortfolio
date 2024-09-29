@@ -115,23 +115,20 @@ RETURNS table(personid varchar, titleid varchar)
 	LANGUAGE plpgsql 
 	as  $$
 	declare rec record;
-	declare temp_kft VARCHAR;
-	declare temp_kft1 VARCHAR;
-	declare temp_kft2 VARCHAR;
 begin 
-drop table outputTable; --this line has to be commented out before start, did not spend time figuring out a better way
+drop table if exists outputTable; --this line has to be commented out before start, did not spend time figuring out a better way
 create temp table outputTable(per_id varchar, tit_id varchar); -- create temp table
 for rec in select nconst, knownfortitles from name_basics -- for each row returned from the select statement
 LOOP	
-	temp_kft = split_part(rec.knownfortitles, ',', 1); -- inserting knownfortitles first commaseperated value in to the temp_kft, since there is a max of 3 knownfortitles there are three variables
-	temp_kft1 = split_part(rec.knownfortitles, ',', 2);
-	temp_kft2 = split_part(rec.knownfortitles, ',', 3);
+
 insert into outputTable(per_id, tit_id) values (rec.nconst, unnest(string_to_array(rec.knownfortitles, ','))); --heres where the insert into temp table happens
 END LOOP;
 insert into most_relevant(person_id, title_id) select per_id, tit_id from outputTable where EXISTS(select tconst from title_basics where tconst = tit_id); -- and finally insert into the actual most_relevant table. 
+-- the reason we are using temp tables is cause I was unable to write code that was able to do the "where EXISTS" check in the second exist as rec is a record and not a table which I can use select/from/where
 return query select * from most_relevant; 
 end;
 $$
+
 
 /*create genre_list table*/
 DROP TABLE IF EXISTS genre_list CASCADE;
