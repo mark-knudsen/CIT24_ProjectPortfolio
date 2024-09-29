@@ -27,7 +27,7 @@ birth_year numeric(4),
 death_year numeric(4)
 );
 
-/*Inserting data from tables name_basics to person*/
+/*insert data from tables name_basics to person*/
 INSERT INTO person(person_ID, primary_name, birth_year,death_year) Select nconst, primaryname, NULLIF(birthyear, '')::NUMERIC, NULLIF(deathyear, '')::NUMERIC from name_basics
 
 
@@ -205,7 +205,6 @@ job text,
 primary key (person_ID, title_ID, ordering),
 foreign key (title_ID) references title (title_ID),
 foreign key (person_ID) references person (person_ID)
-
 );
 
 /*Insert from title_principals into principal_cast*/
@@ -213,3 +212,41 @@ insert into principal_cast(person_ID, ordering, title_ID, character_name, catego
 select title_principals.nconst, ordering, title_principals.tconst, characters, category, job 
 from title_principals, title_basics, name_basics 
 where title_basics.tconst = title_principals.tconst AND name_basics.nconst = title_principals.nconst;
+
+/*create table rating*/
+
+CREATE TABLE rating
+(
+title_ID varchar(10) primary key,
+average_rating numeric(3,1), ---Ændret denne til 3,1, da man ellers kun kan vise max 9.9
+vote_count numeric(7),
+foreign key (title_ID) references title (title_ID)
+);
+
+/*insert data into rating from title_ratings*/
+insert into rating(title_ID, average_rating, vote_count) 
+select title_ratings.tconst, averagerating, numvotes 
+from title_ratings, title_basics 
+where title_basics.tconst = title_ratings.tconst
+
+
+
+/*create table word_index */
+DROP TABLE IF EXISTS word_index CASCADE;
+CREATE TABLE word_index
+(
+title_ID varchar(10),
+word text,
+field char(1),
+lexeme text,
+
+primary key (title_ID, word, field),
+foreign key (title_ID) references title (title_ID)
+
+);
+
+
+/*insert data into word_index from wi table*/
+insert into word_index(title_ID, word, field, lexeme) select wi.tconst, wi.word, wi.field, wi.lexeme from wi, title_basics where title_basics.tconst = wi.tconst
+
+
