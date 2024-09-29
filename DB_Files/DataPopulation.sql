@@ -250,3 +250,82 @@ foreign key (title_ID) references title (title_ID)
 insert into word_index(title_ID, word, field, lexeme) select wi.tconst, wi.word, wi.field, wi.lexeme from wi, title_basics where title_basics.tconst = wi.tconst
 
 
+
+/*Creating table Plot*/
+DROP TABLE IF EXISTS plot CASCADE;
+CREATE TABLE plot
+(
+title_ID varchar(10) primary key,
+plot TEXT
+);
+
+/*Inserting data from field in OMDB_Data called"plot" to Plot*/
+INSERT INTO plot(title_ID, plot) SELECT tconst, plot FROM omdb_data WHERE plot != 'N/A' AND plot IS NOT NULL 
+
+/*Creating table Poster*/
+DROP TABLE IF EXISTS poster CASCADE;
+CREATE TABLE poster
+(
+title_ID varchar(10) primary key,
+poster text,
+foreign key (title_ID) references title (title_ID)
+);
+
+/*Inserting data from field in OMDB_Data called "Poster" to Poster*/
+INSERT INTO poster(title_ID, poster) SELECT tconst, poster FROM omdb_data WHERE poster != 'N/A' AND poster IS NOT NULL 
+
+/*Creating table episode_from_series*/
+DROP TABLE IF EXISTS episode_from_series CASCADE;
+CREATE TABLE episode_from_series
+(
+title_ID varchar(10),
+series_title_ID varchar(10),
+season_num numeric(2),
+episode_num numeric (4),
+
+primary key (title_ID, series_title_ID),
+foreign key (title_ID) references title (title_ID),
+foreign key (series_title_ID) references title (title_ID)
+
+);
+
+/*Inserting data from title_episode to episode_from_series*/
+INSERT INTO episode_from_series(title_ID, series_title_ID, season_num, episode_num) SELECT tconst, parenttconst, seasonnumber, episodenumber FROM title_episode
+
+/*Creating table localized_title */
+DROP TABLE IF EXISTS localized_title CASCADE;
+CREATE TABLE localized_title
+(
+localized_ID serial UNIQUE,
+title_ID varchar(10),
+ordering numeric(3), -- dvs localized ID bliver unik for hver title_ID + ordering combination
+
+
+primary key (localized_ID, title_ID, ordering),
+foreign key (title_ID) references title (title_ID)
+);
+
+ALTER SEQUENCE localized_title_localized_ID_seq RESTART WITH 1;
+/*Inserting data from title_akas to localized_title, excluding titles present in title_akas that has 't' attribute in "isoriginaltitle" column. Aka excluding original titles */
+INSERT INTO localized_title(title_ID, ordering) SELECT titleid, ordering FROM title_akas WHERE isoriginaltitle IS FALSE; 
+
+/*Creating table localized_detail*/
+DROP TABLE IF EXISTS localized_detail CASCADE;
+CREATE TABLE localized_detail
+(
+localized_ID INT4 primary key,
+localized_title text,
+language varchar(10),
+region varchar(10),
+type varchar(256),
+attribute varchar(256),
+
+foreign key (localized_ID) references localized_title (localized_ID)
+
+); 
+
+/*Inserting data from title_akas and localized_title to localized_detail*/
+INSERT INTO localized_detail(localized_ID, localized_title, language, region, type, attribute) SELECT lt.localized_ID, taka.title, taka.language, taka.region, taka.types, taka.attributes 
+FROM localized_title as lt
+JOIN title_akas taka ON lt.title_ID = taka.titleid
+
