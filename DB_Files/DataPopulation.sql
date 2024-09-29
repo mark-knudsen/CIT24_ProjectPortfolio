@@ -163,3 +163,36 @@ $BODY$
 -- run genres_trim()
 select * from atomize_and_populate_genres()
 
+
+/*create table title_genre */
+DROP TABLE IF EXISTS title_genre CASCADE;
+CREATE TABLE title_genre
+(
+genre_ID SMALLINT,
+title_ID varchar(10),
+
+primary key (title_ID, genre_ID),
+foreign key (title_ID) references title (title_ID),
+foreign key (genre_ID) references genre_list(genre_ID)
+);
+
+/*atomize and popuate genres from title_basics into title_genre*/
+drop function atomize_and_populate_genres()
+create or replace function atomize_and_populate_genres()
+RETURNS table(genreid int2, titleid varchar)
+	LANGUAGE plpgsql 
+	as  $$
+	declare rec record;
+begin 
+drop table if exists outputTable;
+create temp table outputTable(tit_id varchar, genre varchar);
+for rec in select tconst, genres from title_basics
+LOOP	
+
+insert into outputTable(tit_id, genre) values (rec.tconst, unnest(string_to_array(rec.genres, ',')));
+END LOOP;
+
+insert into title_genre(genre_id, title_id) select genre_list.genre_ID, tit_id from outputTable, genre_list where outputTable.genre = genre_list.genre;
+return query select * from title_genre; 
+end;
+$$
