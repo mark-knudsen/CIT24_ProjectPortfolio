@@ -44,29 +44,25 @@ primary key (profession_ID, profession)
 /*Trimming name_basics.primaryprofession into atomic and seperated values*/
 
 CREATE OR REPLACE FUNCTION profession_trim()
-  RETURNS setof TEXT as  $BODY$
+  RETURNS table(profession_id int, profession varchar) as  $BODY$
   declare longprofstring text;
   rec record;
-
 begin
 for rec in SELECT distinct primaryprofession from name_basics
 LOOP
 	longprofstring = concat(longprofstring, rec.primaryprofession, ', ');
 END LOOP; 
-return query select * from string_to_table(longprofstring, ',');
+ALTER SEQUENCE profession_profession_id_seq RESTART WITH 1;
+
+insert into profession(profession) 
+SELECT distinct * from string_to_table(longprofstring, ',');
+
+return query select * from profession ORDER BY profession_id asc;
 end;
 $BODY$
   LANGUAGE plpgsql VOLATILE
 
-
-SELECT distinct * from profession_trim();
-
-/*clears and prepares serial sequence for population*/
-select currval(pg_get_serial_sequence('profession', 'profession_id')) as test_seq;
-ALTER SEQUENCE test_seq RESTART WITH 0;
-
-/*populates table profession*/
-insert into profession(profession) 
+/*call this for profession_trim()*/
 SELECT distinct * from profession_trim();
 
 
@@ -90,20 +86,19 @@ CREATE OR REPLACE FUNCTION atomize_and_populate_primary_profession()
 	as  $$
 	declare rec record;
 begin
-drop table tempPrimProf; --if previous temptable exist, drop it 
+drop table if exists tempPrimProf; --if previous temptable exist, drop it 
 Create temp table tempPrimProf(pid varchar, primprof text); -- create new temptable
 for rec in SELECT nconst, primaryprofession from name_basics -- for loop with select statement
 LOOP
 insert into tempPrimProf(pid, primprof) values (rec.nconst, unnest(string_to_array(rec.primaryprofession, ',')));  --populat temp table (an intermidiary step for debugging purposes, should be replaced with population below)
 END LOOP; 
 insert into primary_profession(profession_id, person_id) select profession_id, pid from tempPrimProf tpp, profession p where p.profession = primprof; -- populate from temp table to profession
+-- the reason we are using temp tables is cause I was unable to write code that was able to do the "where EXISTS" check in the second exist as rec is a record and not a table which I can use select/from/where
 return query select * from tempPrimProf; -- for debugging purposes, can be removed as long as return type is changed too
 end;
 $$
 
 /*Creating most_relevant table*/
-
-
 DROP TABLE IF EXISTS most_relevant CASCADE;
 CREATE TABLE most_relevant
 (
@@ -115,7 +110,7 @@ foreign key(title_ID) references title (title_ID)
 );
 
 /*atomziation of data and subsequent population of table most_relevant*/
-create or replace function atomized_clean_mostknowfor()
+create or replace function atomize_and_populate_mostknownfor()
 RETURNS table(personid varchar, titleid varchar)
 	LANGUAGE plpgsql 
 	as  $$
@@ -124,16 +119,50 @@ RETURNS table(personid varchar, titleid varchar)
 	declare temp_kft1 VARCHAR;
 	declare temp_kft2 VARCHAR;
 begin 
-drop table outputTable2xx; --this line has to be commented out before start, did not spend time figuring out a better way
-create temp table outputTable2xx(per_id varchar, tit_id varchar); -- create temp table
+drop table outputTable; --this line has to be commented out before start, did not spend time figuring out a better way
+create temp table outputTable(per_id varchar, tit_id varchar); -- create temp table
 for rec in select nconst, knownfortitles from name_basics -- for each row returned from the select statement
 LOOP	
 	temp_kft = split_part(rec.knownfortitles, ',', 1); -- inserting knownfortitles first commaseperated value in to the temp_kft, since there is a max of 3 knownfortitles there are three variables
 	temp_kft1 = split_part(rec.knownfortitles, ',', 2);
 	temp_kft2 = split_part(rec.knownfortitles, ',', 3);
-insert into outputTable2xx(per_id, tit_id) values (rec.nconst, unnest(string_to_array(rec.knownfortitles, ','))); --heres where the insert into temp table happens
+insert into outputTable(per_id, tit_id) values (rec.nconst, unnest(string_to_array(rec.knownfortitles, ','))); --heres where the insert into temp table happens
 END LOOP;
-insert into most_relevant(person_id, title_id) select per_id, tit_id from outputTable2xx where EXISTS(select tconst from title_basics where tconst = tit_id); -- and finally insert into the actual most_relevant table
+insert into most_relevant(person_id, title_id) select per_id, tit_id from outputTable where EXISTS(select tconst from title_basics where tconst = tit_id); -- and finally insert into the actual most_relevant table. 
 return query select * from most_relevant; 
 end;
 $$
+
+/*create genre_list table*/
+DROP TABLE IF EXISTS genre_list CASCADE;
+CREATE TABLE genre_list
+(
+genre_ID serial primary key,
+genre varchar(256)
+);
+
+
+
+/*Trimming title_basics.genre into atomic and seperated values*/
+CREATE OR REPLACE FUNCTION atomize_and_populate_genres()
+  RETURNS table (id int, genre VARCHAR) as  $BODY$
+  declare longgenrestring text;
+  rec record;
+begin
+for rec in SELECT distinct genres from title_basics
+LOOP
+	longgenrestring  = concat(longgenrestring, rec.genres, ', ');
+END LOOP; 
+
+ALTER SEQUENCE genre_list_genre_id_seq RESTART WITH 1;
+insert into genre_list(genre) 
+SELECT distinct * from string_to_table(longgenrestring, ',');
+
+return query select * from genre_list;
+end;
+$BODY$
+  LANGUAGE plpgsql VOLATILE
+
+-- run genres_trim()
+select * from atomize_and_populate_genres()
+
