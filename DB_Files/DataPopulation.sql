@@ -1,4 +1,4 @@
-/*Creating table Title*/
+/*Creating table title*/
 CREATE TABLE title
 (
 title_ID varchar(10) primary key,
@@ -11,7 +11,7 @@ runtime numeric(6),
 isadult boolean
 );
 
-/*Inserting data from title_basics to title*/
+/*Inserting data from tables title_basics to title*/
 INSERT INTO title(title_ID, title_type, primary_title, original_title, start_year, end_year, runtime, isadult)
 SELECT tconst, titletype, primarytitle, originaltitle, NULLIF(startyear, '')::NUMERIC, NULLIF(endyear, '')::NUMERIC, runtimeminutes, isadult
 FROM title_basics
@@ -27,7 +27,7 @@ birth_year numeric(4),
 death_year numeric(4)
 );
 
-/*Inserting data from name_basics to person*/
+/*Inserting data from tables name_basics to person*/
 INSERT INTO person(person_ID, primary_name, birth_year,death_year) Select nconst, primaryname, NULLIF(birthyear, '')::NUMERIC, NULLIF(deathyear, '')::NUMERIC from name_basics
 
 
@@ -41,9 +41,9 @@ primary key (profession_ID, profession)
 );
 
 
-/*Trimming name_basics.primaryprofession into atomic and seperated values*/
+/*Trimming name_basics.primaryprofession into atomic values and inserting into table profession*/
 
-CREATE OR REPLACE FUNCTION profession_trim()
+CREATE OR REPLACE FUNCTION atomize_and_populate_profession()
   RETURNS table(profession_id int, profession varchar) as  $BODY$
   declare longprofstring text;
   rec record;
@@ -62,10 +62,6 @@ end;
 $BODY$
   LANGUAGE plpgsql VOLATILE
 
-/*call this for profession_trim()*/
-SELECT distinct * from profession_trim();
-
-
 
 /*creates primary_profession*/
 DROP TABLE IF EXISTS primary_profession CASCADE;
@@ -79,8 +75,8 @@ foreign key(person_ID) references person (person_ID)
 );
 
 
-/*atomize and populate primary_profession*/
-CREATE OR REPLACE FUNCTION atomize_and_populate_primary_profession()
+/*Populate primary_profession from name_basic using profession tables profession_id*/
+CREATE OR REPLACE FUNCTION populate_primary_profession()
   RETURNS Table( id varchar, prof text)
 	LANGUAGE plpgsql 
 	as  $$
@@ -110,7 +106,7 @@ foreign key(title_ID) references title (title_ID)
 );
 
 /*atomziation of data and subsequent population of table most_relevant*/
-create or replace function atomize_and_populate_mostknownfor()
+create or replace function atomize_and_populate_most_relevant()
 RETURNS table(personid varchar, titleid varchar)
 	LANGUAGE plpgsql 
 	as  $$
@@ -140,8 +136,8 @@ genre varchar(256)
 
 
 
-/*Trimming title_basics.genre into atomic and seperated values*/
-CREATE OR REPLACE FUNCTION atomize_and_populate_genres()
+/*Trimming title_basics.genre into atomic and seperated values and inserting those in genre_list*/
+CREATE OR REPLACE FUNCTION atomize_and_populate_genre_list()
   RETURNS table (id int, genre VARCHAR) as  $BODY$
   declare longgenrestring text;
   rec record;
@@ -160,11 +156,8 @@ end;
 $BODY$
   LANGUAGE plpgsql VOLATILE
 
--- run genres_trim()
-select * from atomize_and_populate_genres()
 
-
-/*create table title_genre */
+/*create table title_genre*/
 DROP TABLE IF EXISTS title_genre CASCADE;
 CREATE TABLE title_genre
 (
@@ -176,9 +169,9 @@ foreign key (title_ID) references title (title_ID),
 foreign key (genre_ID) references genre_list(genre_ID)
 );
 
-/*atomize and popuate genres from title_basics into title_genre*/
-drop function atomize_and_populate_genres()
-create or replace function atomize_and_populate_genres()
+/*atomize and popuate genres from title_basics into table title_genre*/
+
+create or replace function atomize_and_populate_title_genre()
 RETURNS table(genreid int2, titleid varchar)
 	LANGUAGE plpgsql 
 	as  $$
