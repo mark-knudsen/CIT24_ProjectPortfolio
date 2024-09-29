@@ -189,3 +189,27 @@ insert into title_genre(genre_id, title_id) select genre_list.genre_ID, tit_id f
 return query select * from title_genre; 
 end;
 $$
+
+
+/*create table principal_cast*/
+
+CREATE TABLE principal_cast 
+(
+person_ID varchar(10),
+ordering numeric(2),
+title_ID varchar(10),
+character_name text,
+category varchar(50),
+job text,
+
+primary key (person_ID, title_ID, ordering),
+foreign key (title_ID) references title (title_ID),
+foreign key (person_ID) references person (person_ID)
+
+);
+
+/*Insert from title_principals into principal_cast*/
+insert into principal_cast(person_ID, ordering, title_ID, character_name, category, job) 
+select title_principals.nconst, ordering, title_principals.tconst, characters, category, job 
+from title_principals, title_basics, name_basics 
+where title_basics.tconst = title_principals.tconst AND name_basics.nconst = title_principals.nconst;
