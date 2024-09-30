@@ -59,7 +59,7 @@ ALTER SEQUENCE profession_profession_id_seq RESTART WITH 1;
 insert into profession(profession) 
 SELECT distinct * from string_to_table(longprofstring, ',');
 
-return query select * from profession ORDER BY profession_id asc;
+return query select * from profession;
 end;
 $BODY$
   LANGUAGE plpgsql VOLATILE;
@@ -116,17 +116,16 @@ RETURNS table(personid varchar, titleid varchar)
 begin 
 drop table if exists outputTable; --this line has to be commented out before start, did not spend time figuring out a better way
 create temp table outputTable(per_id varchar, tit_id varchar); -- create temp table
-for rec in select nconst, knownfortitles from name_basics -- for each row returned from the select statement
+for rec in select nconst, knownfortitles from name_basics LIMIT 5 -- for each row returned from the select statement
 LOOP	
 
 insert into outputTable(per_id, tit_id) values (rec.nconst, unnest(string_to_array(rec.knownfortitles, ','))); --heres where the insert into temp table happens
-END LOOP;
+END LOOP ;
 insert into most_relevant(person_id, title_id) select per_id, tit_id from outputTable where EXISTS(select tconst from title_basics where tconst = tit_id); -- and finally insert into the actual most_relevant table. 
 -- the reason we are using temp tables is cause I was unable to write code that was able to do the "where EXISTS" check in the second exist as rec is a record and not a table which I can use select/from/where
 return query select * from most_relevant; 
 end;
 $$;
-
 
 /*create genre_list table*/
 DROP TABLE IF EXISTS genre_list CASCADE;
@@ -329,6 +328,9 @@ foreign key (localized_ID) references localized_title (localized_ID)
 INSERT INTO localized_detail(localized_ID, localized_title, language, region, type, attribute) SELECT lt.localized_ID, taka.title, taka.language, taka.region, taka.types, taka.attributes 
 FROM localized_title as lt
 JOIN title_akas taka ON lt.title_ID = taka.titleid AND lt.ordering = taka.ordering;
+
+DROP TABLE IF EXISTS title_basics, title_akas, title_episode, title_crew, name_basics, title_principals, title_ratings, omdb_data, wi;
+
  
  
  
