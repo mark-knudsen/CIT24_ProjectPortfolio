@@ -42,7 +42,7 @@ title_ID VARCHAR(10),
 created_at TIMESTAMP,
 annotation TEXT,
 
-PRIMARY KEY (customer_ID, title_ID, created_at),
+PRIMARY KEY (customer_ID, title_ID),
 FOREIGN KEY (customer_ID) REFERENCES customer (customer_ID),
 FOREIGN KEY (title_ID) REFERENCES TITLE (title_ID)
 
@@ -56,8 +56,11 @@ person_ID varchar(10),
 created_at TIMESTAMP,
 annotation TEXT, --Hvilken datatype??
 
-PRIMARY KEY (customer_ID, person_ID, created_at),
+PRIMARY KEY (customer_ID, person_ID),
 FOREIGN KEY (customer_ID) REFERENCES customer (customer_ID),
 FOREIGN KEY (person_ID) REFERENCES person (person_ID)
 
 );
+
+
+

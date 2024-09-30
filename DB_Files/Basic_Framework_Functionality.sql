@@ -36,3 +36,20 @@ RETURNS TABLE(title_id VARCHAR(10), primary_title TEXT)
   BEGIN
 END;
 $$;
+
+
+/*insert a rating into table customer_rating*/
+CREATE  PROCEDURE CreateCustomerRating(arg_customer_ID int4, arg_title_ID varchar, arg_rating numeric(3,1))
+     LANGUAGE plpgsql 
+		 as  $BODY$
+begin
+IF arg_rating > 10.0 OR arg_rating < 0 THEN
+	raise notice 'Outside of rating range. min: 0.0 max: 10.0';
+ELSE
+	insert into customer_rating(customer_id, title_id, rating, created_at) values (arg_customer_ID, arg_title_ID, arg_rating, now());
+
+END IF;
+
+end;
+$BODY$
+
