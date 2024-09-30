@@ -62,23 +62,29 @@ CREATE OR REPLACE PROCEDURE CreateTitleBookmark(
 $$
   BEGIN
     INSERT INTO customer_title_bookmark(customer_ID, title_ID, created_at, annotation)
-    VALUES (customer_id, title_id, NOW()), annotation);    
+    VALUES (customer_id, title_id, NOW(), annotation);    
   END;
 $$;
 
 
 /* Create Bookmark for person. */
-CREATE OR REPLACE PROCEDURE CreateTitleBookmark(
+CREATE OR REPLACE PROCEDURE CreatePersonBookmark(
   in customer_ID INT, 
   in person_ID VARCHAR, 
   in annotation TEXT DEFAULT NULL
 ) LANGUAGE plpgsql AS 
 $$
   BEGIN
-    INSERT INTO customer_title_bookmark(customer_ID, person_ID, created_at, annotation)
-    VALUES (customer_id, person_id, NOW()), annotation);    
+    INSERT INTO customer_person_bookmark(customer_ID, person_ID, created_at, annotation)
+    VALUES (customer_id, person_id, NOW(), annotation);    
   END;
 $$;
+
+/*update rating made previously for the same customer/title */
+CREATE  PROCEDURE UpdateCustomerRating(arg_customer_ID int4, arg_title_ID varchar, arg_rating numeric(3,1))
+     LANGUAGE plpgsql 
+		 as  $BODY$
+begin
 
 /* Get title bookmark */
 CREATE OR REPLACE FUNCTION GetCustomerTitleBookmark(
@@ -116,3 +122,23 @@ $$
     WHERE CTB.customer_id = cust_id AND CTB.person_id = per_id;
   END;
 $$;
+/*delete  titlebookmarks*/
+create procedure DeleteTitleBookmark(arg_customer_ID int, arg_title_ID varchar)
+  LANGUAGE plpgsql 
+		 as  $BODY$
+begin
+DELETE FROM customer_title_bookmark
+WHERE customer_id= arg_customer_ID and title_id = title_ID;
+end;
+$BODY$
+
+
+/*delete  personbookmarks*/
+create procedure DeletePersonBookmark(arg_customer_ID int, arg_person_ID varchar)
+  LANGUAGE plpgsql 
+		 as  $BODY$
+begin
+DELETE FROM customer_person_bookmark
+WHERE customer_id= arg_customer_ID and person_id = person_ID;
+end;
+$BODY$
