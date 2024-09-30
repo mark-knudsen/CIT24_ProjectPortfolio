@@ -43,8 +43,13 @@ CREATE  PROCEDURE CreateCustomerRating(arg_customer_ID int4, arg_title_ID varcha
      LANGUAGE plpgsql 
 		 as  $BODY$
 begin
+<<<<<<< HEAD
 IF arg_rating > 10.0 OR arg_rating < 0 OR EXISTS(select customer_id, title_id from customer_rating where customer_id = arg_customer_id and title_id = arg_title_id) THEN
 	raise exception 'Outside of rating range. min: 0.0 max: 10.0 AND/OR user already rated this movie';
+=======
+IF arg_rating > 10.0 OR arg_rating < 0 THEN
+	raise exception 'Outside of rating range. min: 0.0 max: 10.0';
+>>>>>>> 68fdb506faa813360b663e643bb606f8c1297f1a
 ELSE
 	insert into customer_rating(customer_id, title_id, rating, created_at) values (arg_customer_ID, arg_title_ID, arg_rating, now());
 
