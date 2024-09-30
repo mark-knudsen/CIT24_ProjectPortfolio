@@ -44,7 +44,7 @@ CREATE  PROCEDURE CreateCustomerRating(arg_customer_ID int4, arg_title_ID varcha
 		 as  $BODY$
 begin
 IF arg_rating > 10.0 OR arg_rating < 0 THEN
-	raise notice 'Outside of rating range. min: 0.0 max: 10.0';
+	raise exception 'Outside of rating range. min: 0.0 max: 10.0';
 ELSE
 	insert into customer_rating(customer_id, title_id, rating, created_at) values (arg_customer_ID, arg_title_ID, arg_rating, now());
 
@@ -53,3 +53,17 @@ END IF;
 end;
 $BODY$
 
+/*update rating made previously for the same customer/title */
+CREATE  PROCEDURE UpdateCustomerRating(arg_customer_ID int4, arg_title_ID varchar, arg_rating numeric(3,1))
+     LANGUAGE plpgsql 
+		 as  $BODY$
+begin
+
+if EXISTS(select customer_id, title_id from customer_rating where customer_id = arg_customer_id and title_id = arg_title_id AND arg_rating != rating) THEN
+	update customer_rating set rating = arg_rating, created_at = now() where customer_id = arg_customer_id and title_id = arg_title_id;
+	ELSE
+	raise exception 'No previous rating for title was found';
+END IF;
+
+end;
+$BODY$
