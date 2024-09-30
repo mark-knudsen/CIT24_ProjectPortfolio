@@ -135,7 +135,6 @@ genre varchar(256)
 );
 
 
-
 /*Trimming title_basics.genre into atomic and seperated values and inserting those in genre_list*/
 CREATE OR REPLACE FUNCTION atomize_and_populate_genre_list()
   RETURNS table (id int, genre VARCHAR) as  $BODY$
@@ -144,9 +143,9 @@ CREATE OR REPLACE FUNCTION atomize_and_populate_genre_list()
 begin
 for rec in SELECT distinct genres from title_basics
 LOOP
-	longgenrestring  = concat(longgenrestring, rec.genres, ', ');
+	longgenrestring = concat(longgenrestring, rec.genres, ',');
 END LOOP; 
-
+longgenrestring = substrlonggenrestring  1, length(longgenrestring) -1);
 ALTER SEQUENCE genre_list_genre_id_seq RESTART WITH 1;
 insert into genre_list(genre) 
 SELECT distinct * from string_to_table(longgenrestring, ',');
