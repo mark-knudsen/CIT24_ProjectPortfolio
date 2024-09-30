@@ -145,3 +145,75 @@ DELETE FROM customer_person_bookmark
 WHERE customer_id= arg_customer_ID and person_id = person_ID;
 end;
 $BODY$
+
+-- RATINGS
+
+-- get customer rating 
+
+CREATE OR REPLACE FUNCTION GetCustomerRating(arg_customer_ID int4, arg_title_ID VARCHAR)
+  RETURNS TABLE("costumer_ID" int4, "title_ID" varchar, "rating" numeric(3,1), "created_at" TIMESTAMP) AS $BODY$
+begin
+SELECT * from costumer_rating_history WHERE costumer_ID=arg_customer_ID and title_ID=arg_title_ID;
+end;
+$BODY$
+  LANGUAGE plpgsql VOLATILE 
+
+-- get customer rating history
+
+CREATE OR REPLACE FUNCTION GetCustomerRatingHistory(arg_customer_ID int4)
+  RETURNS TABLE("customer_ID" int4, "title_ID" varchar, "rating" numeric(3,1), "created_at" TIMESTAMP) AS $BODY$
+begin
+return query SELECT * from customer_rating WHERE customer_ID=arg_customer_ID ORDER BY created_at;
+end;
+$BODY$
+  LANGUAGE plpgsql VOLATILE 
+  
+  SELECT * from GetCustomerRatingHistory(1);
+  
+-- delete rating
+
+CREATE OR REPLACE PROCEDURE DeleteRating(arg_customer_ID int4, arg_title_ID varchar)
+   LANGUAGE plpgsql 
+  as  $BODY$
+begin
+
+ IF EXISTS (SELECT 1 from customer_rating WHERE customer_ID=arg_customer_ID and title_ID=arg_title_ID) THEN
+        DELETE from customer_rating WHERE customer_ID=arg_customer_ID and title_ID=arg_title_ID;
+        RAISE NOTICE 'rating deleted successfully.';
+    ELSE
+        RAISE EXCEPTION 'rating with customer_ID % does not exist.', arg_customer_ID;
+    END IF;
+
+--DELETE from rating WHERE customer_ID=arg_ and title_ID=arg_title_ID;
+end;
+$BODY$
+
+SELECT * from customer_rating;
+
+CALL DeleteRating(1, 'tt11632488');
+CALL DeleteRating(1, 'tt11632489'); -- should fail if already deleted
+      
+ -- search
+ 
+ -- get customer search history
+   
+CREATE OR REPLACE FUNCTION GetCustomerSearchHistory(arg_customer_ID int4)
+  RETURNS TABLE("customer_ID" int4, "search_terms" TEXT, "created_at" TIMESTAMP) AS $BODY$
+begin
+return query select * from customer_search_history WHERE customer_ID=arg_customer_ID ORDER BY created_at;
+--raise exception 'big error, beware';
+end;
+$BODY$
+  LANGUAGE plpgsql VOLATILE 
+  
+  SELECT * from GetCustomerSearchHistory(1);
+  
+-- create customer search history
+
+CREATE PROCEDURE CreateCustomerSearchHistory(arg_customer_ID int4, arg_search_terms text)
+  LANGUAGE plpgsql 
+  as  $BODY$
+begin
+INSERT into customer_search_history values(arg_costumer_ID, arg_search_terms, CURRENT_TIMESTAMP);
+end;
+$BODY$
