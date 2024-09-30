@@ -53,3 +53,30 @@ END IF;
 end;
 $BODY$
 
+/* Create Bookmark for title. */
+CREATE OR REPLACE PROCEDURE CreateTitleBookmark(
+  in customer_ID INT, 
+  in title_ID VARCHAR, 
+  in annotation TEXT DEFAULT NULL
+) LANGUAGE plpgsql AS 
+$$
+  BEGIN
+    INSERT INTO customer_title_bookmark(customer_ID, title_ID, created_at, annotation)
+    VALUES (customer_id, title_id, NOW()), annotation);    
+  END;
+$$;
+
+
+/* Create Bookmark for person. */
+CREATE OR REPLACE PROCEDURE CreateTitleBookmark(
+  in customer_ID INT, 
+  in person_ID VARCHAR, 
+  in annotation TEXT DEFAULT NULL
+) LANGUAGE plpgsql AS 
+$$
+  BEGIN
+    INSERT INTO customer_title_bookmark(customer_ID, person_ID, created_at, annotation)
+    VALUES (customer_id, person_id, NOW()), annotation);    
+  END;
+$$;
+
