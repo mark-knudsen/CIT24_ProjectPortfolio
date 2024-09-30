@@ -28,15 +28,18 @@ WHERE email = arg_email;
 end;
 $BODY$
 
+
 /*Searches a string and saves the search result to an ID*/
-CREATE OR REPLACE FUNCTION string_search(arg_customer_ID INT4, arg_query TEXT)
+CREATE OR REPLACE FUNCTION string_search(arg_customer_ID INT4, query TEXT)
 RETURNS TABLE(title_id VARCHAR(10), primary_title TEXT)
     LANGUAGE plpgsql 
     as  $$
+    
   BEGIN
+  INSERT INTO customer_search_history(customer_id, search_terms, created_at) values(arg_customer_ID, query, NOW());
+RETURN query (SELECT t.title_id, t.primary_title FROM title as t NATURAL JOIN plot as p WHERE position(query in t.primary_title)>0 OR position(query in p.plot)>0);
 END;
 $$;
-
 
 /*insert a rating into table customer_rating*/
 CREATE  PROCEDURE CreateCustomerRating(arg_customer_ID int4, arg_title_ID varchar, arg_rating numeric(3,1))
