@@ -43,10 +43,8 @@ CREATE  PROCEDURE CreateCustomerRating(arg_customer_ID int4, arg_title_ID varcha
      LANGUAGE plpgsql 
 		 as  $BODY$
 begin
-
-IF arg_rating > 10.0 OR arg_rating < 0 OR EXISTS(select customer_id, title_id from customer_rating where customer_id = arg_customer_id and title_id = arg_title_id) THEN
-	raise exception 'Outside of rating range. min: 0.0 max: 10.0 AND/OR user already rated this movie';
-
+IF arg_rating > 10.0 OR arg_rating < 0 THEN
+	raise notice 'Outside of rating range. min: 0.0 max: 10.0';
 ELSE
 	insert into customer_rating(customer_id, title_id, rating, created_at) values (arg_customer_ID, arg_title_ID, arg_rating, now());
 
@@ -81,18 +79,40 @@ $$
     VALUES (customer_id, person_id, NOW()), annotation);    
   END;
 $$;
-/*update rating made previously for the same customer/title */
-CREATE  PROCEDURE UpdateCustomerRating(arg_customer_ID int4, arg_title_ID varchar, arg_rating numeric(3,1))
-     LANGUAGE plpgsql 
-		 as  $BODY$
-begin
 
-if EXISTS(select customer_id, title_id from customer_rating where customer_id = arg_customer_id and title_id = arg_title_id AND arg_rating != rating) THEN
-	update customer_rating set rating = arg_rating, created_at = now() where customer_id = arg_customer_id and title_id = arg_title_id;
-	ELSE
-	raise exception 'No previous rating for title was found';
-END IF;
+/* Get title bookmark */
+CREATE OR REPLACE FUNCTION GetCustomerTitleBookmark(
+  in customer_ID INT, 
+  in person_ID VARCHAR
+) LANGUAGE plpgsql AS 
+$$
+  BEGIN
+    INSERT INTO customer_title_bookmark(customer_ID, person_ID, created_at, annotation)
+    VALUES (customer_id, person_id, NOW()), annotation);    
+  END;
+$$;
 
-end;
-$BODY$
+/* Get customer title bookmark */
+CREATE OR REPLACE FUNCTION GetTitleBookmark (cust_id INT, tit_id VARCHAR)
+RETURNS TABLE(customer_id INT, title_id VARCHAR, created_at TIMESTAMP, notation text)
+LANGUAGE plpgsql AS $$
+    BEGIN
+      RETURN query
+      SELECT *
+      FROM customer_title_bookmark AS CTB
+      WHERE CTB.customer_id = cust_id AND CTB.title_id = tit_id;
+  END;
+$$;
 
+/* Get Customer person bookmark */
+CREATE OR REPLACE FUNCTION GetPersonBookmark (cust_id INT, per_id VARCHAR)
+  RETURNS TABLE(customer_id INT, person_id VARCHAR, created_at TIMESTAMP, notation text)
+LANGUAGE plpgsql AS 
+$$
+  BEGIN
+    RETURN query
+    SELECT *
+    FROM customer_person_bookmark AS CTB
+    WHERE CTB.customer_id = cust_id AND CTB.person_id = per_id;
+  END;
+$$;
