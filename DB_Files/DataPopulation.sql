@@ -292,6 +292,7 @@ foreign key (series_title_ID) references title (title_ID)
 /*Inserting data from title_episode to episode_from_series*/
 INSERT INTO episode_from_series(title_ID, series_title_ID, season_num, episode_num) SELECT tconst, parenttconst, seasonnumber, episodenumber FROM title_episode
 
+
 /*Creating table localized_title */
 DROP TABLE IF EXISTS localized_title CASCADE;
 CREATE TABLE localized_title
@@ -309,6 +310,7 @@ ALTER SEQUENCE localized_title_localized_ID_seq RESTART WITH 1;
 /*Inserting data from title_akas to localized_title, excluding titles present in title_akas that has 't' attribute in "isoriginaltitle" column. Aka excluding original titles */
 INSERT INTO localized_title(title_ID, ordering) SELECT titleid, ordering FROM title_akas WHERE isoriginaltitle IS FALSE; 
 
+
 /*Creating table localized_detail*/
 DROP TABLE IF EXISTS localized_detail CASCADE;
 CREATE TABLE localized_detail
@@ -321,11 +323,14 @@ type varchar(256),
 attribute varchar(256),
 
 foreign key (localized_ID) references localized_title (localized_ID)
-
 ); 
+
+select * from localized_detail where localized_title = 'Twin Peaks'
 
 /*Inserting data from title_akas and localized_title to localized_detail*/
 INSERT INTO localized_detail(localized_ID, localized_title, language, region, type, attribute) SELECT lt.localized_ID, taka.title, taka.language, taka.region, taka.types, taka.attributes 
 FROM localized_title as lt
-JOIN title_akas taka ON lt.title_ID = taka.titleid
-
+JOIN title_akas taka ON lt.title_ID = taka.titleid AND lt.ordering = taka.ordering 
+ 
+ 
+ 
