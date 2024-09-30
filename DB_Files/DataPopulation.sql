@@ -50,7 +50,7 @@ CREATE OR REPLACE FUNCTION atomize_and_populate_profession()
 begin
 for rec in SELECT distinct primaryprofession from name_basics where regexp_like(primaryprofession, '\w')
 LOOP
-	longprofstring = concat(longprofstring, rec.primaryprofession, ', ');
+	longprofstring = concat(longprofstring, rec.primaryprofession, ',');
 END LOOP; 
 longprofstring = substr(longprofstring , 1, length(longprofstring) -1);
 ALTER SEQUENCE profession_profession_id_seq RESTART WITH 1;
