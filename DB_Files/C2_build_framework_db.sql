@@ -11,10 +11,11 @@ password TEXT NOT NULL
 DROP TABLE IF EXISTS customer_search_history CASCADE;
 CREATE TABLE customer_search_history
 (
-customer_ID INT4 PRIMARY KEY,
+customer_ID INT4,
 search_terms TEXT,
 created_at TIMESTAMP,
 
+PRIMARY KEY (customer_ID, created_at),
 FOREIGN KEY (customer_ID) REFERENCES customer (customer_ID)
 
 );
