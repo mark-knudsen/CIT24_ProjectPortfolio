@@ -48,10 +48,11 @@ CREATE OR REPLACE FUNCTION atomize_and_populate_profession()
   declare longprofstring text;
   rec record;
 begin
-for rec in SELECT distinct primaryprofession from name_basics
+for rec in SELECT distinct primaryprofession from name_basics where regexp_like(primaryprofession, '\w')
 LOOP
 	longprofstring = concat(longprofstring, rec.primaryprofession, ', ');
 END LOOP; 
+longprofstring = substr(longprofstring , 1, length(longprofstring) -1);
 ALTER SEQUENCE profession_profession_id_seq RESTART WITH 1;
 
 insert into profession(profession) 
@@ -141,11 +142,11 @@ CREATE OR REPLACE FUNCTION atomize_and_populate_genre_list()
   declare longgenrestring text;
   rec record;
 begin
-for rec in SELECT distinct genres from title_basics
+for rec in SELECT distinct genres from title_basics where regexp_like(genres, '\w')
 LOOP
 	longgenrestring = concat(longgenrestring, rec.genres, ',');
 END LOOP; 
-longgenrestring = substrlonggenrestring  1, length(longgenrestring) -1);
+longgenrestring = substr(longgenrestring,  1, length(longgenrestring) -1);
 ALTER SEQUENCE genre_list_genre_id_seq RESTART WITH 1;
 insert into genre_list(genre) 
 SELECT distinct * from string_to_table(longgenrestring, ',');
