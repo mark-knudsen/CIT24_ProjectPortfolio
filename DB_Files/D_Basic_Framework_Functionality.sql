@@ -37,7 +37,11 @@ $BODY$
 /************************************************RATING************************************************/
 
 
-CREATE OR REPLACE PROCEDURE CreateCustomerRating(arg_customer_ID int4, arg_title_ID varchar, arg_rating numeric(3,1))
+
+
+-- create customer rating
+
+CREATE OR REPLACE PROCEDURE create_customer_rating(arg_customer_ID int4, arg_title_ID varchar, arg_rating numeric(3,1))
 LANGUAGE plpgsql as  
 $BODY$
     begin
@@ -53,22 +57,34 @@ $BODY$
 $BODY$
 
 
-
 -- get customer rating 
 
-CREATE OR REPLACE FUNCTION GetCustomerRating(arg_customer_ID int4, arg_title_ID VARCHAR)
-  RETURNS TABLE("costumer_ID" int4, "title_ID" varchar, "rating" numeric(3,1), "created_at" TIMESTAMP) AS $BODY$
+CREATE OR REPLACE FUNCTION get_customer_rating(arg_customer_ID int4, arg_title_ID VARCHAR)
+  RETURNS TABLE("customer_ID" int4, "title_ID" varchar, "rating" numeric(3,1), "created_at" TIMESTAMP) AS $BODY$
 begin
 return query SELECT * from customer_rating WHERE customer_ID = arg_customer_ID and title_ID=arg_title_ID;
 
 end;
 $BODY$
   LANGUAGE plpgsql VOLATILE 
+  
+  
+-- get customer rating history
+
+CREATE OR REPLACE FUNCTION get_customer_rating_history(arg_customer_ID int4)
+  RETURNS TABLE("customer_ID" int4, "title_ID" varchar, "rating" numeric(3,1), "created_at" TIMESTAMP) AS $BODY$
+begin
+return query SELECT * from customer_rating WHERE customer_ID=arg_customer_ID ORDER BY created_at;
+end;
+$BODY$
+  LANGUAGE plpgsql VOLATILE 
+  
+  SELECT * from GetCustomerRatingHistory(1);
 
   
 -- delete rating
 
-CREATE OR REPLACE PROCEDURE DeleteRating(arg_customer_ID int4, arg_title_ID varchar)
+CREATE OR REPLACE PROCEDURE delete_rating(arg_customer_ID int4, arg_title_ID varchar)
    LANGUAGE plpgsql as  
 $BODY$
 begin
@@ -86,7 +102,7 @@ $BODY$
 
 
 /*update rating made previously for the same customer/title */
-CREATE  PROCEDURE UpdateCustomerRating(arg_customer_ID int4, arg_title_ID varchar, arg_rating numeric(3,1))
+CREATE  PROCEDURE update_customer_rating(arg_customer_ID int4, arg_title_ID varchar, arg_rating numeric(3,1))
      LANGUAGE plpgsql 
 		 as  $BODY$
 begin
@@ -263,6 +279,4 @@ $$;
 CREATE OR REPLACE TRIGGER after_delete_customer_rating_trigger
 AFTER DELETE ON customer_rating
 FOR EACH ROW EXECUTE FUNCTION trigger_Delete_Rating();
-
-
 
