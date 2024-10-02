@@ -278,3 +278,45 @@ CREATE OR REPLACE TRIGGER after_delete_customer_rating_trigger
 AFTER DELETE ON customer_rating
 FOR EACH ROW EXECUTE FUNCTION trigger_Delete_Rating();
 
+
+/* Function to determine coplayers */
+CREATE OR REPLACE FUNCTION determine_coplayers(arg_actor_name text)
+RETURNS TABLE (searched_coplayer_ID VARCHAR, searched_coplayer_name VARCHAR, coplayer_ID VARCHAR, coplayer_name VARCHAR, frequency BIGINT)
+LANGUAGE plpgsql AS
+$$
+  BEGIN 
+    RETURN query 
+    SELECT 
+      t1.person_id, 
+      t1.primary_name, 
+      t2.person_id, 
+      t2.primary_name, 
+      count(t2.title_ID) 
+    FROM related_title_actors AS t1, related_title_actors AS t2 
+    WHERE 
+      t1.primary_name ilike '%' || arg_actor_name  || '%' 
+      AND t2.title_ID=t1.title_ID 
+      AND t1.person_id != t2.person_id
+    GROUP BY 
+    t1.person_id, 
+    t1.primary_name, 
+    t2.person_id, 
+    t2.primary_name;
+  END;
+$$;
+
+
+/* Material view for related actors */
+DROP MATERIALIZED view related_title_actors;
+CREATE OR REPLACE MATERIALIZED VIEW related_title_actors AS 
+SELECT 
+  distinct person_id, 
+  primary_name,
+  primary_title,
+  title_ID
+FROM 
+  title NATURAL join principal_cast NATURAL join person
+WHERE 
+  principal_cast.category = 'actor' OR principal_cast.category = 'actress' 
+ORDER BY person_id;
+
