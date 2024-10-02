@@ -308,7 +308,7 @@ $$;
 
 /* Material view for related actors */
 DROP MATERIALIZED view related_title_actors;
-CREATE OR REPLACE MATERIALIZED VIEW related_title_actors AS 
+CREATE MATERIALIZED VIEW related_title_actors AS 
 SELECT 
   distinct person_id, 
   primary_name,
