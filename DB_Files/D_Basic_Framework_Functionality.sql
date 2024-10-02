@@ -308,7 +308,7 @@ $$;
 
 /* Material view for related actors */
 DROP MATERIALIZED view related_title_actors;
-CREATE MATERIALIZED VIEW related_title_actors AS 
+CREATE OR REPLACE MATERIALIZED VIEW related_title_actors AS 
 SELECT 
   distinct person_id, 
   primary_name,
@@ -320,3 +320,20 @@ WHERE
   principal_cast.category = 'actor' OR principal_cast.category = 'actress' 
 ORDER BY person_id;
 
+
+
+-- added average rating to person
+alter table person add column person_average_rating numeric(3,1)
+
+--Alter table person add column person_average_rating numeric(3,1)
+DO $$ declare rec record;
+begin
+for rec in select * from related_title_actors natural join rating where related_title_actors.title_id = rating.title_id
+loop
+
+--raise notice '%', trunc((rec.vote_count*rec.average_rating)/(rec.vote_count),1);
+update person
+SET person_average_rating = trunc((rec.vote_count*rec.average_rating)/(rec.vote_count),1) where person_id = rec.person_id;
+end loop;
+end;
+$$
