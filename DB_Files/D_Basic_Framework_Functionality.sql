@@ -47,7 +47,7 @@ $BODY$
     begin
     IF arg_rating > 10.0 OR arg_rating < 0 OR EXISTS(select customer_id, title_id from customer_rating where customer_id = arg_customer_id and title_id = arg_title_id) THEN
 
-	    raise notice 'Outside of rating range. min: 0.0 max: 10.0 AND/OR this customer has already rated this movie';
+	    raise exception 'Outside of rating range. min: 0.0 max: 10.0 AND/OR this customer has already rated this movie';
     ELSE
 	    insert into customer_rating(customer_id, title_id, rating, created_at) values (arg_customer_ID, arg_title_ID, arg_rating, now());
 
@@ -79,8 +79,6 @@ end;
 $BODY$
   LANGUAGE plpgsql VOLATILE 
   
-  SELECT * from GetCustomerRatingHistory(1);
-
   
 -- delete rating
 
