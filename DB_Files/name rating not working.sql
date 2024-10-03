@@ -114,3 +114,4 @@ set person_average_rating = rating_cte.person_weighted_rating FROM rating_cte WH
 end;
 $$ 
 
+-----------------------------
