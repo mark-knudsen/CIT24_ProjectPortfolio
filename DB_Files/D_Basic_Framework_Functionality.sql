@@ -230,6 +230,54 @@ $BODY$
 
 
 
+-- create structured search query
+drop function structured_search_query(int4, text, text, text, text);
+CREATE OR REPLACE FUNCTION structured_search_query(arg_user_id int4, arg_title_name text=NULL::text, arg_plot text=NULL::text, arg_character text=NULL::text, arg_person_name text=NULL::text)
+  RETURNS TABLE(title_id varchar, primary_name text) AS $BODY$
+
+declare search_term text = arg_title_name || ',' || arg_plot || ',' || arg_character || ',' || arg_person_name;
+
+begin 
+
+if arg_title_name = '' and arg_plot = '' and arg_character = '' and arg_person_name = '' then
+raise exception 'fill out the search tearm';
+end if;
+
+insert into customer_search_history values(arg_user_ID, search_term);
+
+return query Select distinct title.title_id, title.primary_title from title NATURAL join plot NATURAL join principal_cast NATURAL join person WHERE
+ primary_title ilike '%'|| arg_title_name || '%' and plot.plot ilike '%' || arg_plot || '%' and principal_cast.character_name ilike '%' || arg_character || '%'
+and person.primary_name ilike '%' || arg_person_name || '%' and (principal_cast.category = 'actor' or principal_cast.category = 'actress');
+
+end;
+$BODY$
+  LANGUAGE plpgsql VOLATILE
+  
+
+-- create structured actor search query
+CREATE OR REPLACE FUNCTION structured_actor_search_query(arg_user_id int4, arg_title_name text=NULL::text, arg_plot text=NULL::text, arg_character text=NULL::text, arg_person_name text=NULL::text)
+  RETURNS TABLE(primary_name varchar, actor_character text) AS $BODY$
+
+declare search_term text = arg_title_name || ',' || arg_plot || ',' || arg_character || ',' || arg_person_name;
+
+begin 
+
+if arg_title_name = '' and arg_plot = '' and arg_character = '' and arg_person_name = '' then
+raise exception 'fill out the search tearm';
+end if;
+
+insert into customer_search_history values(arg_user_ID, search_term);
+
+return query Select distinct person.primary_name, principal_cast.character_name from title NATURAL join plot NATURAL join principal_cast NATURAL join person WHERE
+ primary_title ilike '%'|| arg_title_name || '%' and plot.plot ilike '%' || arg_plot || '%' and principal_cast.character_name ilike '%' || arg_character || '%'
+and person.primary_name ilike '%' || arg_person_name || '%' and (principal_cast.category = 'actor' or principal_cast.category = 'actress');
+
+end;
+$BODY$
+  LANGUAGE plpgsql VOLATILE
+
+
+
 /***************************************Rating trigger***************************************/
 
 
@@ -276,4 +324,106 @@ $$;
 CREATE OR REPLACE TRIGGER after_delete_customer_rating_trigger
 AFTER DELETE ON customer_rating
 FOR EACH ROW EXECUTE FUNCTION trigger_delete_rating();
+
+
+/* Function to determine coplayers */
+CREATE OR REPLACE FUNCTION determine_coplayers(arg_actor_name text)
+RETURNS TABLE (searched_coplayer_ID VARCHAR, searched_coplayer_name VARCHAR, coplayer_ID VARCHAR, coplayer_name VARCHAR, frequency BIGINT)
+LANGUAGE plpgsql AS
+$$
+  BEGIN 
+    RETURN query 
+    SELECT 
+      t1.person_id, 
+      t1.primary_name, 
+      t2.person_id, 
+      t2.primary_name, 
+      count(t2.title_ID) 
+    FROM related_title_actors AS t1, related_title_actors AS t2 
+    WHERE 
+      t1.primary_name ilike '%' || arg_actor_name  || '%' 
+      AND t2.title_ID=t1.title_ID 
+      AND t1.person_id != t2.person_id
+    GROUP BY 
+    t1.person_id, 
+    t1.primary_name, 
+    t2.person_id, 
+    t2.primary_name;
+  END;
+$$;
+
+
+/* Material view for related actors */
+DROP MATERIALIZED view related_title_actors;
+CREATE OR REPLACE MATERIALIZED VIEW related_title_actors AS 
+SELECT 
+  distinct person_id, 
+  primary_name,
+  primary_title,
+  title_ID
+FROM 
+  title NATURAL join principal_cast NATURAL join person
+WHERE 
+  principal_cast.category = 'actor' OR principal_cast.category = 'actress' 
+ORDER BY person_id;
+
+
+
+-- added average rating to person
+alter table person add column person_average_rating numeric(3,1)
+
+--Alter table person add column person_average_rating numeric(3,1)
+DO $$ declare rec record;
+begin
+for rec in select * from related_title_actors natural join rating where related_title_actors.title_id = rating.title_id
+loop
+
+--raise notice '%', trunc((rec.vote_count*rec.average_rating)/(rec.vote_count),1);
+update person
+SET person_average_rating = trunc((rec.vote_count*rec.average_rating)/(rec.vote_count),1) where person_id = rec.person_id;
+end loop;
+end;
+$$
+
+
+
+/* Function to determine popular actors */
+CREATE OR REPLACE FUNCTION popular_actors(arg_movie_title TEXT)
+
+RETURNS TABLE (person_id VARCHAR, primary_name VARCHAR, person_average_rating NUMERIC)
+LANGUAGE plpgsql AS
+$$
+  BEGIN 
+    RETURN query SELECT rta.person_id, rta.primary_name, p.person_average_rating FROM related_title_actors as rta NATURAL JOIN person as p  WHERE primary_title ilike '%' || arg_movie_title || '%' ORDER BY person_average_rating DESC;
+    
+  END;
+$$;
+
+--Test of function popular_actors
+SELECT * FROM popular_actors('Dinsdale!');
+
+/* Function to determine popular coplayers */
+CREATE OR REPLACE FUNCTION determine_popular_coplayers(arg_actor_name text)
+RETURNS TABLE (coplayer_ID VARCHAR, coplayer_name VARCHAR, rating NUMERIC)
+LANGUAGE plpgsql AS
+$$
+  BEGIN 
+    RETURN query 
+    SELECT
+      t2.person_id, 
+      t2.primary_name,
+      p.person_average_rating
+    FROM related_title_actors AS t1, related_title_actors AS t2 NATURAL JOIN person as p
+    WHERE 
+      t1.primary_name ilike '%' || arg_actor_name  || '%' 
+      AND t2.title_ID=t1.title_ID 
+      AND t1.person_id != t2.person_id
+    ORDER BY
+    p.person_average_rating DESC;
+  END;
+$$;
+
+--Test of function determine_popular_coplayers
+SELECT * from determine_popular_coplayers('Masaharu Fukuyama');
+SELECT * FROM person WHERE person_id = 'nm1157364'
 
