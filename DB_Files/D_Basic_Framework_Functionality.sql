@@ -231,6 +231,54 @@ $BODY$
 
 
 
+-- create structured search query
+drop function structured_search_query(int4, text, text, text, text);
+CREATE OR REPLACE FUNCTION structured_search_query(arg_user_id int4, arg_title_name text=NULL::text, arg_plot text=NULL::text, arg_character text=NULL::text, arg_person_name text=NULL::text)
+  RETURNS TABLE(title_id varchar, primary_name text) AS $BODY$
+
+declare search_term text = arg_title_name || ',' || arg_plot || ',' || arg_character || ',' || arg_person_name;
+
+begin 
+
+if arg_title_name = '' and arg_plot = '' and arg_character = '' and arg_person_name = '' then
+raise exception 'fill out the search tearm';
+end if;
+
+insert into customer_search_history values(arg_user_ID, search_term);
+
+return query Select distinct title.title_id, title.primary_title from title NATURAL join plot NATURAL join principal_cast NATURAL join person WHERE
+ primary_title ilike '%'|| arg_title_name || '%' and plot.plot ilike '%' || arg_plot || '%' and principal_cast.character_name ilike '%' || arg_character || '%'
+and person.primary_name ilike '%' || arg_person_name || '%' and (principal_cast.category = 'actor' or principal_cast.category = 'actress');
+
+end;
+$BODY$
+  LANGUAGE plpgsql VOLATILE
+  
+
+-- create structured actor search query
+CREATE OR REPLACE FUNCTION structured_actor_search_query(arg_user_id int4, arg_title_name text=NULL::text, arg_plot text=NULL::text, arg_character text=NULL::text, arg_person_name text=NULL::text)
+  RETURNS TABLE(primary_name varchar, actor_character text) AS $BODY$
+
+declare search_term text = arg_title_name || ',' || arg_plot || ',' || arg_character || ',' || arg_person_name;
+
+begin 
+
+if arg_title_name = '' and arg_plot = '' and arg_character = '' and arg_person_name = '' then
+raise exception 'fill out the search tearm';
+end if;
+
+insert into customer_search_history values(arg_user_ID, search_term);
+
+return query Select distinct person.primary_name, principal_cast.character_name from title NATURAL join plot NATURAL join principal_cast NATURAL join person WHERE
+ primary_title ilike '%'|| arg_title_name || '%' and plot.plot ilike '%' || arg_plot || '%' and principal_cast.character_name ilike '%' || arg_character || '%'
+and person.primary_name ilike '%' || arg_person_name || '%' and (principal_cast.category = 'actor' or principal_cast.category = 'actress');
+
+end;
+$BODY$
+  LANGUAGE plpgsql VOLATILE
+
+
+
 /***************************************Rating trigger***************************************/
 
 
