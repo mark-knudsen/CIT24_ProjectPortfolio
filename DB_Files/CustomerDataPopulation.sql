@@ -3,14 +3,15 @@
 
 -- create trigger function that sets created_at attribute to current time
 CREATE OR REPLACE FUNCTION set_created_at() 
-  RETURNS "pg_catalog"."trigger" AS $BODY$
-begin
-new.created_at=CURRENT_TIMESTAMP;
-return new;
-end;
- $BODY$
+RETURNS "pg_catalog"."trigger" AS 
+$BODY$
+  BEGIN
+    new.created_at=CURRENT_TIMESTAMP;
+    RETURN new;
+  END;
+$BODY$
   LANGUAGE plpgsql VOLATILE;
-  
+
   
 
 -- create customer table
@@ -22,19 +23,6 @@ email VARCHAR(256) NOT NULL UNIQUE,
 firstname VARCHAR(50) NOT NULL UNIQUE,
 password TEXT NOT NULL 
 );
-
--- create ustomer search history insert trigger 
-create trigger customer_search_history_insert_trigger 
-BEFORE insert on customer_search_history
-for each row execute procedure set_created_at();
-
--- insert into customer
-INSERT INTO customer (email, firstname, password) VALUES
-('john.doe@example.com', 'John', 'password123'),
-('jane.smith@example.com', 'Jane', 'securepassword'),
-('michael.johnson@example.com', 'Michael', 'mystrongpassword');
-
-
 
 -- create customer search history table
 DROP TABLE IF EXISTS customer_search_history CASCADE;
@@ -48,6 +36,19 @@ PRIMARY KEY (customer_ID, created_at),
 FOREIGN KEY (customer_ID) REFERENCES customer (customer_ID) on DELETE CASCADE
 
 );
+
+-- create ustomer search history insert trigger 
+CREATE TRIGGER customer_search_history_insert_trigger 
+BEFORE INSERT on customer_search_history
+FOR EACH ROW EXECUTE PROCEDURE set_created_at();
+
+-- insert into customer
+INSERT INTO customer (email, firstname, password) VALUES
+('john.doe@example.com', 'John', 'password123'),
+('jane.smith@example.com', 'Jane', 'securepassword'),
+('michael.johnson@example.com', 'Michael', 'mystrongpassword');
+
+
 
 -- insert into customer search history
 INSERT INTO customer_search_history (customer_ID, search_terms) VALUES (1, 'star wars');
@@ -71,9 +72,9 @@ FOREIGN KEY (title_ID) REFERENCES TITLE (title_ID) on DELETE CASCADE
 );
 
 -- create customer rating insert trigger 
-create trigger customer_rating_insert_trigger 
-BEFORE insert on customer_rating
-for each row execute procedure set_created_at(); 
+CREATE TRIGGER customer_rating_insert_trigger 
+BEFORE INSERT on customer_rating
+FOR EACH ROW EXECUTE PROCEDURE set_created_at(); 
 
 -- insert into customer rating
 INSERT INTO customer_rating (customer_ID, title_ID, rating) VALUES
@@ -99,9 +100,9 @@ FOREIGN KEY (title_ID) REFERENCES TITLE (title_ID) on DELETE CASCADE
 );
 
 -- create customer title bookmark insert trigger
-create trigger customer_title_bookmark_insert_trigger 
-BEFORE insert on customer_title_bookmark
-for each row execute procedure set_created_at(); 
+CREATE TRIGGER customer_title_bookmark_insert_trigger 
+BEFORE INSERT on customer_title_bookmark
+FOR EACH ROW EXECUTE PROCEDURE set_created_at(); 
 
 -- insert into customer title bookmark
 INSERT INTO customer_title_bookmark (customer_ID, title_ID, annotation) VALUES (1, 'tt11632488', 'Really enjoyed this book!');
@@ -126,9 +127,9 @@ FOREIGN KEY (person_ID) REFERENCES person (person_ID) on DELETE CASCADE
 );
 
 -- create customer person bookmark trigger
-create trigger customer_person_bookmark_insert_trigger 
-BEFORE insert on customer_person_bookmark
-for each row execute procedure set_created_at(); 
+CREATE TRIGGER customer_person_bookmark_insert_trigger 
+BEFORE INSERT on customer_person_bookmark
+FOR EACH ROW EXECUTE PROCEDURE set_created_at(); 
 
 
 -- insert into customer person bookmark
