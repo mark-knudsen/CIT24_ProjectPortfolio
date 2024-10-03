@@ -83,3 +83,34 @@ BEGIN
 END $$;
 
 
+------Nedenstående er Jacobs bud på fix af namerating. Lad os i morgen sammenholde de 2, og se om der kommer samme resultater! :D
+Alter table person add column person_average_rating numeric(3,1)
+
+
+DO $$
+declare rec record;
+declare tempval numeric;
+
+begin
+
+drop table if exists tt;
+create temp table tt (pid varchar, person_rating numeric (3,1)); --Temp table to store person id and the calculated rating for 1 movie. This value is later used in calculation in CTE called rating_cte below
+
+for rec in select person_id, vote_count, average_rating from related_title_actors natural join rating where related_title_actors.
+title_id = rating.title_id --- Selects each person, and vote_count and average_rating for each participated movie.  
+
+loop
+insert into tt(pid, person_rating) --Insert into temp table, the current rec's person id, and the averaged calculated rating
+values(rec.person_id, trunc((rec.vote_count * rec.average_rating) / greatest(rec.vote_count, 1), 1)); --Greatest ensure that we don't divide by 0, incase vote_count is 0. Aka if votecount is less than 1, the equation gets divided by 1. 
+
+
+end loop;
+
+with rating_cte as --CTE that returns the calculated weighted average rating for each person. 
+(SELECT pid, trunc(SUM(person_rating) / COUNT(*), 1) AS person_weighted_rating FROM tt GROUP BY pid) 
+
+UPDATE person
+set person_average_rating = rating_cte.person_weighted_rating FROM rating_cte WHERE person.person_id = rating_cte.pid; --Updates this weighted average rating for each person
+end;
+$$ 
+
